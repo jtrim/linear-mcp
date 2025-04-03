@@ -176,16 +176,16 @@ func (c *Client) GetIssue(issueID string, opts *GetIssueOptions) (*Issue, error)
 		childrenOpts := &GetIssueChildrenOptions{
 			First: 50, // Default to 50 children
 		}
-		
+
 		if opts.ChildrenFirst > 0 && opts.ChildrenFirst <= 100 {
 			childrenOpts.First = opts.ChildrenFirst
 		}
-		
+
 		children, err := c.GetIssueChildren(issueID, childrenOpts)
 		if err != nil {
 			return issue, fmt.Errorf("failed to load children: %w", err)
 		}
-		
+
 		issue.Children = children
 	}
 
@@ -293,7 +293,7 @@ func (c *Client) CreateIssue(input CreateIssueInput) (*Issue, error) {
 			Name: safeGetString(projectMap, "name"),
 		}
 	}
-	
+
 	if parentMap, ok := issueData["parent"].(map[string]interface{}); ok {
 		issue.Parent = &Issue{
 			ID:         safeGetString(parentMap, "id"),
@@ -491,7 +491,7 @@ func (c *Client) UpdateIssue(issueID string, input UpdateIssueInput) (*Issue, er
 			Name: safeGetString(projectMap, "name"),
 		}
 	}
-	
+
 	if parentMap, ok := issueData["parent"].(map[string]interface{}); ok {
 		issue.Parent = &Issue{
 			ID:         safeGetString(parentMap, "id"),

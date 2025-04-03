@@ -15,8 +15,8 @@ import (
 
 // Get Issue Arguments
 type GetIssueArguments struct {
-	ID string `json:"id" jsonschema:"required,description=The Linear issue ID to fetch"`
-	IncludeChildren bool `json:"include_children" jsonschema:"description=Whether to include children (sub-issues) in the response"`
+	ID              string `json:"id" jsonschema:"required,description=The Linear issue ID to fetch"`
+	IncludeChildren bool   `json:"include_children" jsonschema:"description=Whether to include children (sub-issues) in the response"`
 }
 
 // Get Team Issues Arguments
@@ -87,7 +87,7 @@ func main() {
 	if apiKey == "" {
 		log.Fatalf("LINEAR_API_KEY environment variable is required")
 	}
-	
+
 	// Create Linear client
 	client := linear.NewClient(apiKey)
 
@@ -99,17 +99,17 @@ func main() {
 		opts := &linear.GetIssueOptions{
 			IncludeChildren: args.IncludeChildren,
 		}
-		
+
 		issue, err := client.GetIssue(args.ID, opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get issue: %w", err)
 		}
-		
+
 		jsonData, err := json.MarshalIndent(issue, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal issue to JSON: %w", err)
 		}
-		
+
 		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
 	})
 	if err != nil {
@@ -121,17 +121,17 @@ func main() {
 		opts := &linear.GetTeamIssuesOptions{
 			First: args.First,
 		}
-		
+
 		issues, err := client.GetTeamIssues(args.TeamID, opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get team issues: %w", err)
 		}
-		
+
 		jsonData, err := json.MarshalIndent(issues, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal issues to JSON: %w", err)
 		}
-		
+
 		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
 	})
 	if err != nil {
@@ -150,17 +150,17 @@ func main() {
 			ProjectID:   args.ProjectID,
 			ParentID:    args.ParentID,
 		}
-		
+
 		issue, err := client.CreateIssue(input)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create issue: %w", err)
 		}
-		
+
 		jsonData, err := json.MarshalIndent(issue, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal issue to JSON: %w", err)
 		}
-		
+
 		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
 	})
 	if err != nil {
@@ -178,17 +178,17 @@ func main() {
 			ProjectID:   args.ProjectID,
 			ParentID:    args.ParentID,
 		}
-		
+
 		issue, err := client.UpdateIssue(args.IssueID, input)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update issue: %w", err)
 		}
-		
+
 		jsonData, err := json.MarshalIndent(issue, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal issue to JSON: %w", err)
 		}
-		
+
 		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
 	})
 	if err != nil {
@@ -200,17 +200,17 @@ func main() {
 		opts := &linear.GetIssueChildrenOptions{
 			First: args.First,
 		}
-		
+
 		children, err := client.GetIssueChildren(args.IssueID, opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get issue children: %w", err)
 		}
-		
+
 		jsonData, err := json.MarshalIndent(children, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal children to JSON: %w", err)
 		}
-		
+
 		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
 	})
 	if err != nil {
@@ -228,17 +228,17 @@ func main() {
 			TeamIDs:     args.TeamIDs,
 			LeadID:      args.LeadID,
 		}
-		
+
 		project, err := client.CreateProject(input)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create project: %w", err)
 		}
-		
+
 		jsonData, err := json.MarshalIndent(project, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal project to JSON: %w", err)
 		}
-		
+
 		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
 	})
 	if err != nil {
@@ -251,12 +251,12 @@ func main() {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get teams: %w", err)
 		}
-		
+
 		jsonData, err := json.MarshalIndent(teams, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal teams to JSON: %w", err)
 		}
-		
+
 		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
 	})
 	if err != nil {
@@ -267,31 +267,31 @@ func main() {
 	err = server.RegisterTool("update_project", "Update an existing Linear project", func(args UpdateProjectArguments) (*mcp_golang.ToolResponse, error) {
 		// Convert string values to pointers if provided
 		var name, description, icon, color, state, leadID *string
-		
+
 		if args.Name != "" {
 			name = &args.Name
 		}
-		
+
 		if args.Description != "" {
 			description = &args.Description
 		}
-		
+
 		if args.Icon != "" {
 			icon = &args.Icon
 		}
-		
+
 		if args.Color != "" {
 			color = &args.Color
 		}
-		
+
 		if args.State != "" {
 			state = &args.State
 		}
-		
+
 		if args.LeadID != "" {
 			leadID = &args.LeadID
 		}
-		
+
 		input := linear.UpdateProjectInput{
 			Name:        name,
 			Description: description,
@@ -301,17 +301,17 @@ func main() {
 			TeamIDs:     args.TeamIDs,
 			LeadID:      leadID,
 		}
-		
+
 		project, err := client.UpdateProject(args.ProjectID, input)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update project: %w", err)
 		}
-		
+
 		jsonData, err := json.MarshalIndent(project, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal project to JSON: %w", err)
 		}
-		
+
 		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
 	})
 	if err != nil {

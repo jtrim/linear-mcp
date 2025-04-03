@@ -394,22 +394,22 @@ func (c *Client) CreateProject(input CreateProjectInput) (*Project, error) {
 
 // UpdateProjectInput represents input for updating an existing project
 type UpdateProjectInput struct {
-	Name        *string   `json:"name,omitempty"`
-	Description *string   `json:"description,omitempty"`
-	Icon        *string   `json:"icon,omitempty"`
-	Color       *string   `json:"color,omitempty"`
-	State       *string   `json:"state,omitempty"` // planned, started, paused, completed, canceled
-	TeamIDs     []string  `json:"teamIds,omitempty"`
-	LeadID      *string   `json:"leadId,omitempty"`
-	StartDate   *string   `json:"startDate,omitempty"`  // ISO date format
-	TargetDate  *string   `json:"targetDate,omitempty"` // ISO date format
+	Name        *string  `json:"name,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	Icon        *string  `json:"icon,omitempty"`
+	Color       *string  `json:"color,omitempty"`
+	State       *string  `json:"state,omitempty"` // planned, started, paused, completed, canceled
+	TeamIDs     []string `json:"teamIds,omitempty"`
+	LeadID      *string  `json:"leadId,omitempty"`
+	StartDate   *string  `json:"startDate,omitempty"`  // ISO date format
+	TargetDate  *string  `json:"targetDate,omitempty"` // ISO date format
 }
 
 // UpdateProject updates an existing project in Linear
 func (c *Client) UpdateProject(projectID string, input UpdateProjectInput) (*Project, error) {
 	// Build the input object
 	variables := map[string]interface{}{
-		"id": projectID,
+		"id":    projectID,
 		"input": map[string]interface{}{},
 	}
 
