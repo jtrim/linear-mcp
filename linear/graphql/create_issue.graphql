@@ -1,0 +1,31 @@
+mutation CreateIssue($input: IssueCreateInput!) {
+  issueCreate(input: $input) {
+    success
+    issue {
+      id
+      identifier
+      title
+      description
+      priority
+      url
+      branchName
+      parent {
+        id
+        identifier
+        title
+      }
+      state {
+        id
+        name
+      }
+      assignee {
+        id
+        name
+      }
+      project {
+        id
+        name
+      }
+    }
+  }
+}

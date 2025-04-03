@@ -1,0 +1,25 @@
+query GetIssueChildren($id: String!, $first: Int!) {
+  issue(id: $id) {
+    children(first: $first) {
+      nodes {
+        id
+        identifier
+        title
+        description
+        state {
+          id
+          name
+        }
+        assignee {
+          id
+          name
+          email
+        }
+        priority
+        createdAt
+        updatedAt
+        branchName
+      }
+    }
+  }
+}

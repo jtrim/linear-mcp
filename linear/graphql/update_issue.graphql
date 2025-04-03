@@ -1,0 +1,34 @@
+mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
+  issueUpdate(
+    id: $id,
+    input: $input
+  ) {
+    success
+    issue {
+      id
+      identifier
+      title
+      description
+      priority
+      url
+      branchName
+      state {
+        id
+        name
+      }
+      assignee {
+        id
+        name
+      }
+      project {
+        id
+        name
+      }
+      parent {
+        id
+        identifier
+        title
+      }
+    }
+  }
+}

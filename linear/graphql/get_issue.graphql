@@ -1,0 +1,27 @@
+query GetIssue($id: String!) {
+  issue(id: $id) {
+    id
+    identifier
+    title
+    description
+    state {
+      id
+      name
+    }
+    assignee {
+      id
+      name
+      email
+    }
+    priority
+    createdAt
+    updatedAt
+    url
+    branchName
+    parent {
+      id
+      identifier
+      title
+    }
+  }
+}

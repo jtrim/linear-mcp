@@ -1,0 +1,30 @@
+query GetIssues($teamId: String!, $first: Int!) {
+  team(id: $teamId) {
+    issues(first: $first) {
+      nodes {
+        id
+        identifier
+        title
+        description
+        state {
+          id
+          name
+        }
+        assignee {
+          id
+          name
+          email
+        }
+        priority
+        createdAt
+        updatedAt
+        branchName
+        parent {
+          id
+          identifier
+          title
+        }
+      }
+    }
+  }
+}

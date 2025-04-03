@@ -1,0 +1,33 @@
+# Binaries
+/server
+/linear-mcp
+/cmd/server
+
+# Temp directories
+/tmp
+
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# macOS specific
+.DS_Store
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Dependency directories
+/vendor/
+
+# Claude configuration
+CLAUDE.md
