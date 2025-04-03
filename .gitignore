@@ -31,3 +31,4 @@ go.work
 
 # Claude configuration
 CLAUDE.md
+.mcp.json
