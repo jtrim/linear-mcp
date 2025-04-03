@@ -66,6 +66,18 @@ type CreateProjectArguments struct {
 	LeadID      string   `json:"lead_id" jsonschema:"description=The user ID of the project lead"`
 }
 
+// Update Project Arguments
+type UpdateProjectArguments struct {
+	ProjectID   string   `json:"project_id" jsonschema:"required,description=The Linear project ID to update"`
+	Name        string   `json:"name" jsonschema:"description=The new name for the project"`
+	Description string   `json:"description" jsonschema:"description=The new description for the project"`
+	Icon        string   `json:"icon" jsonschema:"description=The new icon for the project"`
+	Color       string   `json:"color" jsonschema:"description=The new color for the project"`
+	State       string   `json:"state" jsonschema:"description=The new state of the project (planned, started, paused, completed, canceled)"`
+	TeamIDs     []string `json:"team_ids" jsonschema:"description=The new team IDs to associate with the project"`
+	LeadID      string   `json:"lead_id" jsonschema:"description=The new user ID of the project lead"`
+}
+
 // Get Teams Arguments
 type GetTeamsArguments struct{}
 
@@ -249,6 +261,61 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalf("Failed to register get_teams tool: %v", err)
+	}
+
+	// Register updateProject tool
+	err = server.RegisterTool("update_project", "Update an existing Linear project", func(args UpdateProjectArguments) (*mcp_golang.ToolResponse, error) {
+		// Convert string values to pointers if provided
+		var name, description, icon, color, state, leadID *string
+		
+		if args.Name != "" {
+			name = &args.Name
+		}
+		
+		if args.Description != "" {
+			description = &args.Description
+		}
+		
+		if args.Icon != "" {
+			icon = &args.Icon
+		}
+		
+		if args.Color != "" {
+			color = &args.Color
+		}
+		
+		if args.State != "" {
+			state = &args.State
+		}
+		
+		if args.LeadID != "" {
+			leadID = &args.LeadID
+		}
+		
+		input := linear.UpdateProjectInput{
+			Name:        name,
+			Description: description,
+			Icon:        icon,
+			Color:       color,
+			State:       state,
+			TeamIDs:     args.TeamIDs,
+			LeadID:      leadID,
+		}
+		
+		project, err := client.UpdateProject(args.ProjectID, input)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update project: %w", err)
+		}
+		
+		jsonData, err := json.MarshalIndent(project, "", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal project to JSON: %w", err)
+		}
+		
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
+	})
+	if err != nil {
+		log.Fatalf("Failed to register update_project tool: %v", err)
 	}
 
 	// Start the server

@@ -391,3 +391,160 @@ func (c *Client) CreateProject(input CreateProjectInput) (*Project, error) {
 
 	return project, nil
 }
+
+// UpdateProjectInput represents input for updating an existing project
+type UpdateProjectInput struct {
+	Name        *string   `json:"name,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	Icon        *string   `json:"icon,omitempty"`
+	Color       *string   `json:"color,omitempty"`
+	State       *string   `json:"state,omitempty"` // planned, started, paused, completed, canceled
+	TeamIDs     []string  `json:"teamIds,omitempty"`
+	LeadID      *string   `json:"leadId,omitempty"`
+	StartDate   *string   `json:"startDate,omitempty"`  // ISO date format
+	TargetDate  *string   `json:"targetDate,omitempty"` // ISO date format
+}
+
+// UpdateProject updates an existing project in Linear
+func (c *Client) UpdateProject(projectID string, input UpdateProjectInput) (*Project, error) {
+	// Build the input object
+	variables := map[string]interface{}{
+		"id": projectID,
+		"input": map[string]interface{}{},
+	}
+
+	// Add fields to the input object only if they are provided
+	inputObj := variables["input"].(map[string]interface{})
+
+	if input.Name != nil {
+		inputObj["name"] = *input.Name
+	}
+
+	if input.Description != nil {
+		inputObj["description"] = *input.Description
+	}
+
+	if input.Icon != nil {
+		inputObj["icon"] = *input.Icon
+	}
+
+	if input.Color != nil {
+		inputObj["color"] = *input.Color
+	}
+
+	if input.State != nil {
+		inputObj["state"] = *input.State
+	}
+
+	if len(input.TeamIDs) > 0 {
+		inputObj["teamIds"] = input.TeamIDs
+	}
+
+	if input.LeadID != nil {
+		inputObj["leadId"] = *input.LeadID
+	}
+
+	if input.StartDate != nil {
+		inputObj["startDate"] = *input.StartDate
+	}
+
+	if input.TargetDate != nil {
+		inputObj["targetDate"] = *input.TargetDate
+	}
+
+	query := `mutation UpdateProject($id: String!, $input: ProjectUpdateInput!) {
+		projectUpdate(id: $id, input: $input) {
+			success
+			project {
+				id
+				name
+				description
+				icon
+				color
+				state
+				createdAt
+				updatedAt
+				startedAt
+				targetDate
+				sortOrder
+				url
+				lead {
+					id
+					name
+					email
+				}
+				teams {
+					nodes {
+						id
+						name
+						key
+					}
+				}
+			}
+		}
+	}`
+
+	resp, err := c.ExecuteGraphQL(query, variables)
+	if err != nil {
+		return nil, err
+	}
+
+	projectUpdateData, ok := resp.Data["projectUpdate"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid projectUpdate data format")
+	}
+
+	success, ok := projectUpdateData["success"].(bool)
+	if !ok || !success {
+		return nil, fmt.Errorf("project update was not successful")
+	}
+
+	projectData, ok := projectUpdateData["project"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid project data format")
+	}
+
+	project := &Project{
+		ID:          safeGetString(projectData, "id"),
+		Name:        safeGetString(projectData, "name"),
+		Description: safeGetString(projectData, "description"),
+		Icon:        safeGetString(projectData, "icon"),
+		Color:       safeGetString(projectData, "color"),
+		State:       safeGetString(projectData, "state"),
+		CreatedAt:   safeGetString(projectData, "createdAt"),
+		UpdatedAt:   safeGetString(projectData, "updatedAt"),
+		StartedAt:   safeGetString(projectData, "startedAt"),
+		TargetDate:  safeGetString(projectData, "targetDate"),
+		SortOrder:   safeGetFloat64(projectData, "sortOrder"),
+		URL:         safeGetString(projectData, "url"),
+	}
+
+	if leadMap, ok := projectData["lead"].(map[string]interface{}); ok {
+		project.Lead = &User{
+			ID:    safeGetString(leadMap, "id"),
+			Name:  safeGetString(leadMap, "name"),
+			Email: safeGetString(leadMap, "email"),
+		}
+	}
+
+	if teamsMap, ok := projectData["teams"].(map[string]interface{}); ok {
+		if teamsNodes, ok := teamsMap["nodes"].([]interface{}); ok {
+			teams := make([]Team, 0, len(teamsNodes))
+			for _, teamNode := range teamsNodes {
+				teamMap, ok := teamNode.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				team := Team{
+					ID:   safeGetString(teamMap, "id"),
+					Name: safeGetString(teamMap, "name"),
+					Key:  safeGetString(teamMap, "key"),
+				}
+				teams = append(teams, team)
+			}
+			project.Teams = teams
+		}
+	}
+
+	return project, nil
+}
