@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	mcp_golang "github.com/metoro-io/mcp-golang"
@@ -80,6 +83,12 @@ type UpdateProjectArguments struct {
 
 // Get Teams Arguments
 type GetTeamsArguments struct{}
+
+// Download Attachment Arguments
+type DownloadAttachmentArguments struct {
+	URL      string `json:"url" jsonschema:"required,description=URL of the attachment to download (must be from uploads.linear.app)"`
+	FilePath string `json:"file_path" jsonschema:"required,description=Local file path to save the downloaded attachment to"`
+}
 
 func main() {
 	// Load API key from environment
@@ -316,6 +325,59 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalf("Failed to register update_project tool: %v", err)
+	}
+
+	// Register downloadAttachment tool
+	err = server.RegisterTool("download_attachment", "Download a Linear attachment file", func(args DownloadAttachmentArguments) (*mcp_golang.ToolResponse, error) {
+		// Validate URL is from uploads.linear.app
+		if !strings.HasPrefix(args.URL, "https://uploads.linear.app/") {
+			return nil, fmt.Errorf("invalid URL: must be from uploads.linear.app domain")
+		}
+
+		// Create HTTP client
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+		}
+
+		// Create request
+		req, err := http.NewRequest("GET", args.URL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Add headers
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Authorization", apiKey)
+
+		// Execute request
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download attachment: %w", err)
+		}
+		defer resp.Body.Close()
+
+		// Check status code
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("failed to download attachment: server returned status %d", resp.StatusCode)
+		}
+
+		// Create output file
+		out, err := os.Create(args.FilePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create output file: %w", err)
+		}
+		defer out.Close()
+
+		// Copy response body to file
+		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to write attachment to file: %w", err)
+		}
+
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(fmt.Sprintf("Successfully downloaded attachment to %s", args.FilePath))), nil
+	})
+	if err != nil {
+		log.Fatalf("Failed to register download_attachment tool: %v", err)
 	}
 
 	// Start the server
