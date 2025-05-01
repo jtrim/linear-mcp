@@ -22,6 +22,11 @@ type GetIssueArguments struct {
 	IncludeChildren bool   `json:"include_children" jsonschema:"description=Whether to include children (sub-issues) in the response"`
 }
 
+// Get Issue By Identifier Arguments
+type GetIssueByIdentifierArguments struct {
+	Identifier string `json:"identifier" jsonschema:"required,description=The issue identifier to search for (e.g., 'ENG-123')"`
+}
+
 // Get Team Issues Arguments
 type GetTeamIssuesArguments struct {
 	TeamID string `json:"team_id" jsonschema:"required,description=The Linear team ID to fetch issues for"`
@@ -378,6 +383,24 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalf("Failed to register download_attachment tool: %v", err)
+	}
+
+	// Register getIssueByIdentifier tool
+	err = server.RegisterTool("get_issue_by_identifier", "Get a Linear issue by its identifier (e.g., 'ENG-123')", func(args GetIssueByIdentifierArguments) (*mcp_golang.ToolResponse, error) {
+		issue, err := client.GetIssueByIdentifier(args.Identifier)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get issue by identifier: %w", err)
+		}
+
+		jsonData, err := json.MarshalIndent(issue, "", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal issue to JSON: %w", err)
+		}
+
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
+	})
+	if err != nil {
+		log.Fatalf("Failed to register get_issue_by_identifier tool: %v", err)
 	}
 
 	// Start the server

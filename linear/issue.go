@@ -397,6 +397,91 @@ func (c *Client) GetIssueChildren(issueID string, opts *GetIssueChildrenOptions)
 	return children, nil
 }
 
+// GetIssueByIdentifier returns an issue by its identifier (e.g., "PE-123")
+func (c *Client) GetIssueByIdentifier(identifier string) (*Issue, error) {
+	variables := map[string]interface{}{
+		"identifier": identifier,
+	}
+
+	query, err := getGraphQLQuery("search_issues.graphql")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load SearchIssuesByIdentifier query: %w", err)
+	}
+
+	resp, err := c.ExecuteGraphQL(query, variables)
+	if err != nil {
+		return nil, err
+	}
+
+	searchData, ok := resp.Data["searchIssues"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid searchIssues data format")
+	}
+
+	nodesData, ok := searchData["nodes"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid searchIssues nodes format")
+	}
+
+	if len(nodesData) == 0 {
+		return nil, fmt.Errorf("no issues found matching identifier: %s", identifier)
+	}
+
+	for _, node := range nodesData {
+		nodeMap, ok := node.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		issueIdentifier := safeGetString(nodeMap, "identifier")
+		if issueIdentifier == identifier {
+			return mapNodeToIssue(nodeMap)
+		}
+	}
+
+	return nil, fmt.Errorf("no issue found with exact identifier: %s", identifier)
+}
+
+// Helper function to map a node to an Issue
+func mapNodeToIssue(nodeMap map[string]interface{}) (*Issue, error) {
+	issue := &Issue{
+		ID:          safeGetString(nodeMap, "id"),
+		Identifier:  safeGetString(nodeMap, "identifier"),
+		Title:       safeGetString(nodeMap, "title"),
+		Description: safeGetString(nodeMap, "description"),
+		Priority:    safeGetInt(nodeMap, "priority"),
+		CreatedAt:   safeGetString(nodeMap, "createdAt"),
+		UpdatedAt:   safeGetString(nodeMap, "updatedAt"),
+		URL:         safeGetString(nodeMap, "url"),
+		BranchName:  safeGetString(nodeMap, "branchName"),
+	}
+
+	if stateMap, ok := nodeMap["state"].(map[string]interface{}); ok {
+		issue.State = &WorkflowState{
+			ID:   safeGetString(stateMap, "id"),
+			Name: safeGetString(stateMap, "name"),
+		}
+	}
+
+	if assigneeMap, ok := nodeMap["assignee"].(map[string]interface{}); ok {
+		issue.Assignee = &User{
+			ID:    safeGetString(assigneeMap, "id"),
+			Name:  safeGetString(assigneeMap, "name"),
+			Email: safeGetString(assigneeMap, "email"),
+		}
+	}
+
+	if parentMap, ok := nodeMap["parent"].(map[string]interface{}); ok {
+		issue.Parent = &Issue{
+			ID:         safeGetString(parentMap, "id"),
+			Identifier: safeGetString(parentMap, "identifier"),
+			Title:      safeGetString(parentMap, "title"),
+		}
+	}
+
+	return issue, nil
+}
+
 // UpdateIssue updates an existing issue in Linear
 func (c *Client) UpdateIssue(issueID string, input UpdateIssueInput) (*Issue, error) {
 	// Build the input object
