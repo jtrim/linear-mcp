@@ -89,6 +89,18 @@ type UpdateProjectArguments struct {
 // Get Teams Arguments
 type GetTeamsArguments struct{}
 
+// Get Team Projects Arguments
+type GetTeamProjectsArguments struct {
+	TeamID string `json:"team_id" jsonschema:"required,description=The Linear team ID to fetch projects for"`
+	First  int    `json:"first" jsonschema:"description=Number of projects to fetch (max 100)"`
+}
+
+// Get Project Issues Arguments
+type GetProjectIssuesArguments struct {
+	ProjectID string `json:"project_id" jsonschema:"required,description=The Linear project ID to fetch issues for"`
+	First     int    `json:"first" jsonschema:"description=Number of issues to fetch (max 100)"`
+}
+
 // Download Attachment Arguments
 type DownloadAttachmentArguments struct {
 	URL      string `json:"url" jsonschema:"required,description=URL of the attachment to download (must be from uploads.linear.app)"`
@@ -401,6 +413,50 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalf("Failed to register get_issue_by_identifier tool: %v", err)
+	}
+	
+	// Register getTeamProjects tool
+	err = server.RegisterTool("get_team_projects", "Get projects for a Linear team", func(args GetTeamProjectsArguments) (*mcp_golang.ToolResponse, error) {
+		opts := &linear.GetTeamProjectsOptions{
+			First: args.First,
+		}
+
+		projects, err := client.GetTeamProjects(args.TeamID, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get team projects: %w", err)
+		}
+
+		jsonData, err := json.MarshalIndent(projects, "", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal projects to JSON: %w", err)
+		}
+
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
+	})
+	if err != nil {
+		log.Fatalf("Failed to register get_team_projects tool: %v", err)
+	}
+	
+	// Register getProjectIssues tool
+	err = server.RegisterTool("get_project_issues", "Get issues for a Linear project", func(args GetProjectIssuesArguments) (*mcp_golang.ToolResponse, error) {
+		opts := &linear.GetProjectIssuesOptions{
+			First: args.First,
+		}
+
+		projectWithIssues, err := client.GetProjectIssues(args.ProjectID, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get project issues: %w", err)
+		}
+
+		jsonData, err := json.MarshalIndent(projectWithIssues, "", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal project issues to JSON: %w", err)
+		}
+
+		return mcp_golang.NewToolResponse(mcp_golang.NewTextContent(string(jsonData))), nil
+	})
+	if err != nil {
+		log.Fatalf("Failed to register get_project_issues tool: %v", err)
 	}
 
 	// Start the server

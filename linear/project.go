@@ -6,20 +6,22 @@ import (
 
 // Project represents a Linear project
 type Project struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Icon        string  `json:"icon,omitempty"`
-	Color       string  `json:"color,omitempty"`
-	State       string  `json:"state,omitempty"`
-	Lead        *User   `json:"lead,omitempty"`
-	Teams       []Team  `json:"teams,omitempty"`
-	CreatedAt   string  `json:"createdAt"`
-	UpdatedAt   string  `json:"updatedAt,omitempty"`
-	StartedAt   string  `json:"startedAt,omitempty"`
-	TargetDate  string  `json:"targetDate,omitempty"`
-	SortOrder   float64 `json:"sortOrder,omitempty"`
-	URL         string  `json:"url,omitempty"`
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Description string        `json:"description,omitempty"`
+	Icon        string        `json:"icon,omitempty"`
+	Color       string        `json:"color,omitempty"`
+	State       string        `json:"state,omitempty"`
+	Status      *ProjectStatus `json:"status,omitempty"`
+	Lead        *User         `json:"lead,omitempty"`
+	Teams       []Team        `json:"teams,omitempty"`
+	Issues      []Issue       `json:"issues,omitempty"`
+	CreatedAt   string        `json:"createdAt"`
+	UpdatedAt   string        `json:"updatedAt,omitempty"`
+	StartedAt   string        `json:"startedAt,omitempty"`
+	TargetDate  string        `json:"targetDate,omitempty"`
+	SortOrder   float64       `json:"sortOrder,omitempty"`
+	URL         string        `json:"url,omitempty"`
 }
 
 // GetProjectsOptions contains optional parameters for listing projects
@@ -386,6 +388,88 @@ func (c *Client) CreateProject(input CreateProjectInput) (*Project, error) {
 				teams = append(teams, team)
 			}
 			project.Teams = teams
+		}
+	}
+
+	return project, nil
+}
+
+// ProjectWithIssues represents a Linear project with its issues
+type ProjectWithIssues struct {
+	ID     string        `json:"id"`
+	Status *ProjectStatus `json:"status,omitempty"`
+	Issues []Issue       `json:"issues"`
+}
+
+// GetProjectIssuesOptions contains optional parameters for fetching project issues
+type GetProjectIssuesOptions struct {
+	First int // Number of issues to fetch (max 100)
+}
+
+// GetProjectIssues returns issues for a specific project
+func (c *Client) GetProjectIssues(projectID string, opts *GetProjectIssuesOptions) (*ProjectWithIssues, error) {
+	query, err := getGraphQLQuery("get_project_issues.graphql")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load GraphQL query: %w", err)
+	}
+
+	variables := map[string]interface{}{
+		"projectId": projectID,
+	}
+
+	resp, err := c.ExecuteGraphQL(query, variables)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract the project data
+	projectData, ok := resp.Data["project"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid project data format")
+	}
+
+	project := &ProjectWithIssues{
+		ID: safeGetString(projectData, "id"),
+	}
+
+	// Extract status if present
+	if statusMap, ok := projectData["status"].(map[string]interface{}); ok {
+		project.Status = &ProjectStatus{
+			ID:   safeGetString(statusMap, "id"),
+			Name: safeGetString(statusMap, "name"),
+		}
+	}
+
+	// Extract issues data
+	if issuesData, ok := projectData["issues"].(map[string]interface{}); ok {
+		if nodesData, ok := issuesData["nodes"].([]interface{}); ok {
+			issues := make([]Issue, 0, len(nodesData))
+			
+			for _, node := range nodesData {
+				nodeMap, ok := node.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				issue := Issue{
+					ID:          safeGetString(nodeMap, "id"),
+					Title:       safeGetString(nodeMap, "title"),
+					Description: safeGetString(nodeMap, "description"),
+				}
+
+				// Extract assignee if present
+				if assigneeMap, ok := nodeMap["assignee"].(map[string]interface{}); ok {
+					issue.Assignee = &User{
+						ID:    safeGetString(assigneeMap, "id"),
+						Name:  safeGetString(assigneeMap, "name"),
+						Email: safeGetString(assigneeMap, "email"),
+					}
+				}
+
+				issues = append(issues, issue)
+			}
+			
+			project.Issues = issues
 		}
 	}
 

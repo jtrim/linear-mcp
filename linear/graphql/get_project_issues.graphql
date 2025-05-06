@@ -1,0 +1,21 @@
+query GetProjectIssues($projectId: String!) {
+  project(id: $projectId) {
+    id
+    status {
+      id
+      name
+    }
+    issues {
+      nodes {
+        id
+        assignee {
+          id
+          email
+          name
+        }
+        title
+        description
+      }
+    }
+  }
+}

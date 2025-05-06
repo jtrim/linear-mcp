@@ -1,0 +1,15 @@
+query GetTeamProjects($teamId: String!) {
+  team(id: $teamId) {
+    projects {
+      nodes {
+        id
+        name
+        slugId
+        status {
+          id
+          name
+        }
+      }
+    }
+  }
+}
